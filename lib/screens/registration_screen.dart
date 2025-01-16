@@ -1,5 +1,7 @@
 import 'package:email_validator/email_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flash_chat_starting_project/components/rounded_button.dart';
+import 'package:flash_chat_starting_project/screens/chat_screen.dart';
 
 import '/constants.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,11 @@ class RegistrationScreen extends StatefulWidget {
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  var auth = FirebaseAuth.instance;
+  String errorMessage = '';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,44 +38,72 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             const SizedBox(
               height: 48.0,
             ),
-            TextFormField(
-              decoration: kTextFieldDecoration.copyWith(
-                hintText: 'Enter your email',
-                labelText: 'Email',
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    decoration: kTextFieldDecoration.copyWith(
+                      hintText: 'Enter your email',
+                      labelText: 'Email',
+                    ),
+                    controller: _emailController,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (email) {
+                      return email != null && EmailValidator.validate(email)
+                          ? null
+                          : 'Please enter a valid email';
+                    },
+                  ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  TextFormField(
+                    decoration: kTextFieldDecoration.copyWith(
+                      hintText: 'Enter your password',
+                      labelText: 'Password',
+                    ),
+                    obscureText: true,
+                    controller: _passwordController,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (password) {
+                      return password != null && password.length > 5
+                          ? null
+                          : 'The password should be at least 6 characters';
+                    },
+                  ),
+                ],
               ),
-              onChanged: (value) {
-                //Do something with the user input
-              },
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (email){
-                return email != null && EmailValidator.validate(email) ? null :
-                    'Please enter a valid email';
-              },
-            ),
-            const SizedBox(
-              height: 16,
-            ),
-            TextFormField(
-              decoration: kTextFieldDecoration.copyWith(
-                hintText: 'Enter your password',
-                labelText: 'Password',
-              ),
-              obscureText: true,
-              onChanged: (value) {
-                //Do something with the user input
-              },
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (password){
-                return password != null && password.length > 5 ? null : 'The password should be at least 6 characters';
-              },
             ),
             const SizedBox(
               height: 24.0,
             ),
+            Text(
+              errorMessage,
+              style: TextStyle(color: Colors.red, fontSize: 16),
+            ),
             RoundedButton(
               color: kRegisterButtonColor,
               title: 'Register',
-              onPressed: () {},
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  try {
+                    await auth
+                        .createUserWithEmailAndPassword(
+                            email: _emailController.text,
+                            password: _passwordController.text)
+                        .then((value) {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, ChatScreen.id);
+                    });
+                  } catch (e) {
+                    print('ERROR ${e.toString()}');
+                    setState(() {
+                      errorMessage = e.toString().split('] ')[1];
+                    });
+                  }
+                }
+              },
             ),
             const SizedBox(height: 12),
             IconButton(
