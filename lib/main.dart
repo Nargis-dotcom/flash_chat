@@ -16,7 +16,6 @@ void main() async {
   runApp(FlashChat());
 }
 
-
 class FlashChat extends StatelessWidget {
   FlashChat({super.key});
 
